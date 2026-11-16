@@ -118,4 +118,5 @@ dkms.conf
 *.pf
 *.txt
 *.pdf
-!iniciais.pdf
+!lgsc.pdf
+/docs/base
