@@ -22,6 +22,13 @@
 ## page table
 - os endereços recebidos serao int mas vamos trabalhar em cima dos 16 bits dos 32 que o int suporta
 - 8 (8 bit ao 15 bit) -> numero da pagina; 8 (0 bit ao 7 bit)-> offset; 
+- o numero da pagina atua como um index
+- a tabela comtém o endereço base de cada frame na memoria fisica
+- o offset é a localização do frame sendo referenciada (o pedaço do frame)
+1. exatrir o numero da pagina e usar como indexe na tabela
+2. Extrair o frame correspondente da tabela
+3. replace o numero da pagina no endereço logico com o numero do frame
+- offset nao muda e nao é replaced
 
 # fluxo
 - o numero da pagina é extraida do endereço logico e a TLB é consultada
