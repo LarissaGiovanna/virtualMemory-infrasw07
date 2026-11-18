@@ -121,3 +121,4 @@ dkms.conf
 !lgsc.pdf
 /docs/base
 *.bin
+vm

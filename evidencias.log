@@ -1,0 +1,20 @@
+Script iniciado em 2026-11-18 18:53:38-03:00 [COMMAND="date" TERM="xterm-256color" TTY="/dev/pts/7" COLUMNS="157" LINES="4"]
+qua 18 nov 2026 18:53:38 -03
+
+Script concluído em 2026-11-18 18:53:38-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-18 18:53:44-03:00 [COMMAND="whoami" TERM="xterm-256color" TTY="/dev/pts/7" COLUMNS="157" LINES="4"]
+larissa
+
+Script concluído em 2026-11-18 18:53:44-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-18 18:56:17-03:00 [COMMAND="make" TERM="xterm-256color" TTY="/dev/pts/7" COLUMNS="157" LINES="4"]
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+
+Script concluído em 2026-11-18 18:56:17-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-18 18:56:36-03:00 [COMMAND="make clean && make && ./vm" TERM="xterm-256color" TTY="/dev/pts/7" COLUMNS="157" LINES="4"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Hello, World!
+
+Script concluído em 2026-11-18 18:56:36-03:00 [COMMAND_EXIT_CODE="0"]

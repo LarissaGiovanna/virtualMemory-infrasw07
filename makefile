@@ -1,13 +1,10 @@
 CC = gcc
-CFLAGS = -I. -pthread -Wall -Wextra
+CFLAGS = -I. -pthread -Wall -Wextra -pthread
 
-program: dependency.o main.o
+vm: vm.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-dependency.o: dependency.c dependency.h
-	$(CC) $(CFLAGS) -Werror -c $< -o $@
-
-main.o: main.c dependency.h
+vm.o: vm.c
 	$(CC) $(CFLAGS) -c $< -o $@
 clean:
-	rm -f program *.o
+	rm -f vm *.o
