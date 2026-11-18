@@ -120,3 +120,4 @@ dkms.conf
 *.pdf
 !lgsc.pdf
 /docs/base
+*.bin
