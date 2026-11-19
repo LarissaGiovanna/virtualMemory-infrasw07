@@ -1,11 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdint.h>
 
-int main(int argc, char const *argv[])
+typedef struct{
+    int page_number;
+    int frame_number;
+} PageTable;
+
+int main(int argc, char *argv[])
 {
     //lendo as entradas
-    if (argc <= 1 || argc > 4)
+    if (argc != 4)
     {
         //./vm address.txt lru fifo
         fprintf(stdout, "Uso incorreto. Uso: %s <nome_arquivo> <algoritmo_substituicao_pagina> <algoritmo_substituicao_tlb>\n", argv[0]);
@@ -35,24 +42,51 @@ int main(int argc, char const *argv[])
 
     //lendo os endereços do arquivo
     char line[256];
-    int *addresses[1000];
-    int address_count = 0;
+    uint32_t addresses[1000]; //array para armazenar os endereços (uint32_t é um tipo de dado inteiro sem sinal de 32 bitss)
+    size_t address_count = 0; //contador de endereços válidos (size_t é um tipo de dado inteiro sem sinal que é usado para representar o tamanho de objetos em bytes)
 
     while (fgets(line, sizeof(line), address_file))
     {
         //removendo o \n do final da linha
-        line[strcspn(line, "\n")] = 0;
+        line[strcspn(line, "\r\n")] = '\0';
 
         //verificando se a linha é um endereço válido
-        if (strlen(line) > 7) //65636\0\n
+        //se ta vazio o arquivo
+        if (*line == '\0')
         {
-            fprintf(stdout, "Endereço inválido: %s\n", line);
-            continue;
+            fprintf(stdout, "Linha vazia no arquivo de endereços\n");
+            fclose(address_file);
+            return 1; //encerra
         }
-        //alocando memória para o endereço e copiando a linha para o array de endereços
-        addresses[address_count] = malloc(sizeof(int));
-        *addresses[address_count] = atoi(line);
-        address_count++;
+        
+        char *address_str = line;
+        for (char *p = line; *p != '\0'; p++) //p apontando para o primeiro caractere da linha, enquanto não for o final da string, incrementa p e percorre a linha
+        {
+            fprintf(stdout, "Caractere lido: %c\n", *p);
+            if (isdigit(*p) == 0) //se nao for numero
+            {
+                fprintf(stdout, "Endereço inválido no arquivo: %s\n", line);
+                fclose(address_file);
+                return 1; //encerra
+            }
+            address_str[p - line] = *p; //copiando o caractere para o endereço
+        }
+        int address = atoi(address_str); //converte a string para inteiro
+        fprintf(stdout, "Endereço lido: %d\n", address);
+        if (address < 0 || address > 65535) //verifica se o endereço é válido (0 a 65535)
+        {
+            fprintf(stdout, "Endereço fora do intervalo válido (0 a 65535): %d\n", address);
+            fclose(address_file);
+            return 1; //encerra
+        }
+
+        if (address_count >= 1000) {
+            fprintf(stderr, "Muitos enderecos.\n");
+            fclose(address_file);
+            return 1;
+        }
+        addresses[address_count++] = (uint32_t)address; //converte o endereço para uint32_t e armazena no array de endereços, incrementando o contador de endereços
+    }
 
         //fazendo o corte para separar as partes do endereço int
         //8 (0 bit ao 7 bit)-> offset; 8 (8 bit ao 15 bit) -> numero da pagina
@@ -61,17 +95,16 @@ int main(int argc, char const *argv[])
         int offsets[address_count];
         int page_numbers[address_count];
 
-        for (int i = 0; i < address_count; i++)
+        for (size_t i = 0; i < address_count; i++)
         {
-            offsets[i] = *addresses[i] & 0xFF; //8 bits
-            page_numbers[i] = (*addresses[i] >> 8) & 0xFF; //8 bits
+            offsets[i] = addresses[i] & 0xFF; //8 bits
+            page_numbers[i] = (addresses[i] >> 8) & 0xFF; //8 bits
         }
 
+        PageTable page_table[256] = {0}; //tabela de páginas com 256 entradas e inicializada com 0
+
+        fprintf(stdout, "se chegou aqui, leu tudo certo\n");
+
+        fclose(address_file);
+        return 0;
     }
-
-    fclose(address_file);
-
-
-
-    return 0;
-}
