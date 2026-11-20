@@ -151,10 +151,81 @@ Evidência:
 
 ---
 
+## 2026-11-20 00:37 — Prompt 6 — Decisão: `errno` + `strtoul`
+
+Prompt:
+
+> certo. coloque essa decisão do errno e stroul em tentativas. vou implementar ela
+
+O que tentei:
+
+- Entender `errno`, `strtoul`, `endptr` e `unsigned long`.
+- Comparar com `atoi`, que não informa onde parou nem se houve overflow.
+- Decidir usar `strtoul` para validar e converter a linha do arquivo.
+
+Decisão registrada:
+
+1. Zerar `errno` antes da conversão.
+2. Guardar o retorno em `unsigned long`, que é o tipo de retorno de `strtoul`.
+3. Usar `endptr` para saber onde a leitura parou.
+4. Aceitar espaços no início e no fim da linha, mas rejeitar espaço no meio.
+5. Rejeitar quando `endptr == line` (nenhum dígito lido), quando `*endptr != '\0'` depois de pular os espaços finais, quando `errno == ERANGE` e quando `parsed > 65535`.
+6. Só converter para `int` depois de todas as validações.
+
+Código de referência da decisão:
+
+```c
+line[strcspn(line, "\r\n")] = '\0';
+
+char *endptr;
+errno = 0;
+
+unsigned long parsed = strtoul(line, &endptr, 10);
+int overflow = (errno == ERANGE);
+
+while (isspace((unsigned char)*endptr)) {
+    endptr++;
+}
+
+if (endptr == line || *endptr != '\0' || overflow || parsed > 65535) {
+    fprintf(stdout, "Endereço inválido no arquivo: %s\n", line);
+    fclose(address_file);
+    return 1;
+}
+
+int address = (int)parsed;
+```
+
+Exemplos que a implementação deve aceitar/rejeitar:
+
+| Linha | Resultado esperado |
+|---|---|
+| `12107 ` | aceitar como `12107` |
+| ` 12107` | aceitar como `12107` |
+| `12 34` | rejeitar (sobrou `34` depois do espaço) |
+| `abc` | rejeitar (nenhum dígito) |
+| vazio | rejeitar |
+| `65536` | rejeitar (fora da faixa) |
+| `-1` | rejeitar (vira `ULONG_MAX` e passa de `65535`) |
+| número gigante | rejeitar por `ERANGE` |
+
+Resultado:
+
+- Decisão tomada; implementação ainda **não feita** neste momento.
+- A correção deve vir junto com a troca de `line[strcspn(line, "\r\n")] = '0';` por `'\0'`.
+
+Evidência:
+
+- Data/hora do registro: 2026-11-20 00:37:17 -03.
+- Nenhuma alteração de código feita neste passo.
+
+---
+
 ## Pendências registradas
 
 - [ ] Corrigir `line[strcspn(line, "\r\n")] = '0';` para `'\0'`.
 - [ ] Tratar o espaço no fim da última linha de `addresses.txt`.
+- [ ] Implementar a validação com `strtoul`, `endptr`, `errno` e `ERANGE`.
 - [ ] Usar os vetores `offsets` e `page_numbers` na tradução (ou removê-los).
 - [ ] Implementar page table com 256 entradas e 128 frames.
 - [ ] Implementar FIFO/LRU de página.
