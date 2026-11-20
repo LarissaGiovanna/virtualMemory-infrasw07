@@ -221,6 +221,34 @@ Evidência:
 
 ---
 
+## 2026-11-20 00:39 — Prompt 7 — Cronograma refeito
+
+Prompt:
+
+> refaça o meu cronograma. infelizmente nao consegui fazer nada na quinta e nao terminei tudo da quarta. refaça o meu cronograma para as datas ainda restantes, sabendo que segunda e terça feira tenho aula pela manaha e so temos a tarde e a noite (provavelmente teremos que madrugar)
+
+O que tentei:
+
+- Revisar o estado real do código antes de refazer o plano.
+- Rodar o build e o programa com `addresses.txt`.
+- Considerar que sexta, sábado e domingo continuam indisponíveis e que segunda/terça só rendem à tarde e à noite.
+
+Resultado:
+
+- Estado medido: o parser lê 999 endereços e falha no último (`12107 `) por causa do espaço; ainda imprime debug caractere por caractere.
+- Tradução, page table em uso, TLB, threads e estatísticas ainda não existem.
+- Cronograma refeito em `docs/cronograma.md` para segunda 23/11 e terça 24/11, com madrugada, pontos de corte e escopo mínimo.
+- Conclusão do replanejamento: o prazo cabe apenas se o núcleo (page table + 128 frames + LRU/FIFO + TLB) for feito na segunda; terça fica para robustez, relatório e entrega.
+
+Evidência:
+
+- Data/hora do registro: 2026-11-20 00:39:23 -03.
+- `./vm addresses.txt lru fifo` terminou com `exit=1`, leu 999 endereços e rejeitou `12107 `.
+- Commits recentes: `a141f9e` (tratamento de entradas, não finalizado), `a303acd` (tentativas/cronograma), `7ebe25f` (decisão do errno).
+- Nenhuma alteração de código feita neste passo.
+
+---
+
 ## Pendências registradas
 
 - [ ] Corrigir `line[strcspn(line, "\r\n")] = '0';` para `'\0'`.
