@@ -249,6 +249,60 @@ Evidência:
 
 ---
 
+## 2026-11-23 15:33 — Prompt 8 — Auditoria de estado
+
+Prompt:
+
+> verifique aqui o que ja esta feito e me diga de acordo com o nosso cronograma o que ainda falta
+
+O que tentei:
+
+- Rodar `git status`, `git log`, `make clean && make` e o executável.
+- Comparar o estado atual com o cronograma de 20/11 e com a rubrica.
+
+Resultado:
+
+- O build compila, mas o parser regrediu: o `while (fgets(...))` foi removido, então `line` não é preenchida e `address_count` fica em 0.
+- `./vm addresses.txt lru fifo` falha imediatamente com “Endereço inválido no arquivo” e lê lixo.
+- Tradução, `BACKING_STORE.bin`, page table em uso, FIFO/LRU, TLB, threads e estatísticas continuam não implementados.
+- README ainda é o template; relatório e pacote de entrega não existem.
+- O bloco das 13:30–18:00 de segunda já passou sem o núcleo começar; o cronograma está atrasado.
+
+Evidência:
+
+- Data/hora: 2026-11-23 15:33:15 -03.
+- `make clean && make` terminou com `build_exit=0`, mas com 4 warnings de variáveis não usadas.
+- `./vm addresses.txt lru fifo` imprimiu `Endereço inválido no arquivo:` e encerrou.
+- Último commit de código: `8f65e79` em 2026-11-20 00:51:08.
+
+---
+
+## 2026-11-23 15:43 — Prompt 9 — Restaurar o `while`
+
+Prompt:
+
+> entendi. coloque a parte do while que estava dando certo para eu revisar e dar uma olhada.
+
+O que tentei:
+
+- Recolocar o `while (fgets(...))` em volta da leitura e da conversão.
+- Manter a decisão de usar `strtoul`, `endptr`, `errno` e `ERANGE`.
+- Aceitar espaço no fim da linha e armazenar cada endereço em `addresses[address_count++]`.
+
+Resultado:
+
+- O parser voltou a ler o arquivo inteiro: `./vm addresses.txt lru fifo` terminou com `exit=0` e imprimiu `se chegou aqui, leu tudo certo`.
+- Ainda restam warnings de `page_table`, `offsets` e `page_numbers` não usados.
+- Tradução, page table em uso, TLB, threads e estatísticas continuam não implementados.
+
+Evidência:
+
+- Data/hora: 2026-11-23 15:43:33 -03.
+- `make clean && make` terminou com `build_exit=0` e 3 warnings.
+- `git diff -- vm.c` mostra o `while` restaurado em volta do parser.
+
+---
+
 ## Pendências registradas
 
 - [ ] Corrigir `line[strcspn(line, "\r\n")] = '0';` para `'\0'`.

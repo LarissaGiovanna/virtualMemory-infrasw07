@@ -5,7 +5,40 @@
 **Premissa:** sexta 20, sábado 21 e domingo 22 continuam indisponíveis. Segunda e terça têm aula pela manhã; o trabalho acontece à tarde, à noite e madrugando.
 **Carga real:** cerca de 10h na segunda + 9h na terça = **~19h**. É apertado; se você perder 2h, corte os extras, não o relatório.
 
-## Estado atual medido (20/11, 00:39)
+## Auditoria 23/11, 15:33 — status real
+
+O plano de 20/11 está atrasado: o bloco das 13:30–18:00 passou sem o núcleo começar. Estado medido agora:
+
+- `make clean && make` compila, com 3 warnings de variáveis não usadas.
+- `while (fgets(...))` restaurado às 15:43; o parser lê os 1000 endereços e termina com `exit=0`.
+- Ainda não há tradução, `BACKING_STORE.bin`, page table em uso, FIFO/LRU, TLB, threads nem estatísticas.
+- README ainda é o template; relatório e pacote de entrega: **não existem**.
+
+### Plano de recuperação a partir de 15:40
+
+| Horário | Tarefa | Checkpoint |
+|---|---|---|
+| 15:40–16:10 | Recolocar o `while (fgets(...))` e fechar o parser com `strtoul`/`errno` | 1000 endereços lidos, sem debug |
+| 16:10–18:00 | Page table 256 + `BACKING_STORE.bin` + 128 frames + tradução | Byte correto para todos os endereços |
+| 18:00–19:00 | Pausa | — |
+| 19:00–20:30 | FIFO e LRU de página | Page faults coerentes |
+| 20:30–22:00 | TLB FIFO/LRU sem thread | `diff` zero em `lru fifo` |
+| 22:00–00:00 | TLB com thread | `diff` zero em 10 execuções |
+| 00:00–01:00 | Erros, warnings, commit e log | Baseline congelada |
+| 01:00–02:00 | Buffer | Só bug que impeça o `diff` |
+
+**Se 18:00 chegar sem tradução funcionando:** corte 256 frames, fluxos sem TLB e threads. Faça 128 frames + FIFO/LRU + TLB sequencial + relatório.
+
+### Terça 24/11 — plano B se o núcleo atrasar
+
+| Horário | Tarefa |
+|---|---|
+| 13:30–16:00 | Corrigir o núcleo e rodar 10 vezes |
+| 16:00–18:30 | Relatório com o que funcionar |
+| 19:00–21:00 | README, PDF, tar e teste de extração |
+| 21:00–22:30 | Enviar e conferir; **não passar de 22:30** |
+
+## Estado em 20/11 (histórico)
 
 - [x] `make` compila e gera `vm`.
 - [x] `argc != 4` corrigido.
