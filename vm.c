@@ -8,7 +8,17 @@
 typedef struct{
     int page_number;
     int frame_number;
+    int valid;
 } PageTable;
+
+typedef struct{
+    int page_number;
+    int frame_number;
+    int valid;
+    int last_access;
+}TLB;
+
+signed char physical_memory[128][256]; //128 frames de 256 bytes cada
 
 int main(int argc, char *argv[])
 {
