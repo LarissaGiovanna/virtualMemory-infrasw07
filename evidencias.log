@@ -6288,3 +6288,44 @@ gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
 Endereço inválido no arquivo: 
 
 Script concluído em 2026-11-20 00:50:11-03:00 [COMMAND_EXIT_CODE="1"]
+Script iniciado em 2026-11-23 15:40:32-03:00 [COMMAND="date" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+seg 23 nov 2026 15:40:32 -03
+
+Script concluído em 2026-11-23 15:40:32-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-23 15:40:39-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+[01m[Kvm.c:[m[K In function ‘[01m[Kmain[m[K’:
+[01m[Kvm.c:82:19:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kpage_table[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+   82 |         PageTable [01;35m[Kpage_table[m[K[256] = {0}; //tabela de páginas com 256 entradas e inicializada com 0
+      |                   [01;35m[K^~~~~~~~~~[m[K
+[01m[Kvm.c:74:13:[m[K [01;35m[Kwarning: [m[Kvariable ‘[01m[Kpage_numbers[m[K’ set but not used [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-but-set-variable-Wunused-but-set-variable]8;;[m[K]
+   74 |         int [01;35m[Kpage_numbers[m[K[address_count];
+      |             [01;35m[K^~~~~~~~~~~~[m[K
+[01m[Kvm.c:73:13:[m[K [01;35m[Kwarning: [m[Kvariable ‘[01m[Koffsets[m[K’ set but not used [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-but-set-variable-Wunused-but-set-variable]8;;[m[K]
+   73 |         int [01;35m[Koffsets[m[K[address_count];
+      |             [01;35m[K^~~~~~~[m[K
+[01m[Kvm.c:67:13:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kaddress[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+   67 |         int [01;35m[Kaddress[m[K = (int)parsed;
+      |             [01;35m[K^~~~~~~[m[K
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Endereço inválido no arquivo: 
+
+Script concluído em 2026-11-23 15:40:39-03:00 [COMMAND_EXIT_CODE="1"]
+Script iniciado em 2026-11-23 15:49:55-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+[01m[Kvm.c:[m[K In function ‘[01m[Kmain[m[K’:
+[01m[Kvm.c:97:19:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kpage_table[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+   97 |         PageTable [01;35m[Kpage_table[m[K[256] = {0}; //tabela de páginas com 256 entradas e inicializada com 0
+      |                   [01;35m[K^~~~~~~~~~[m[K
+[01m[Kvm.c:89:13:[m[K [01;35m[Kwarning: [m[Kvariable ‘[01m[Kpage_numbers[m[K’ set but not used [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-but-set-variable-Wunused-but-set-variable]8;;[m[K]
+   89 |         int [01;35m[Kpage_numbers[m[K[address_count];
+      |             [01;35m[K^~~~~~~~~~~~[m[K
+[01m[Kvm.c:88:13:[m[K [01;35m[Kwarning: [m[Kvariable ‘[01m[Koffsets[m[K’ set but not used [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-but-set-variable-Wunused-but-set-variable]8;;[m[K]
+   88 |         int [01;35m[Koffsets[m[K[address_count];
+      |             [01;35m[K^~~~~~~[m[K
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+se chegou aqui, leu tudo certo
+
+Script concluído em 2026-11-23 15:49:55-03:00 [COMMAND_EXIT_CODE="0"]

@@ -46,25 +46,40 @@ int main(int argc, char *argv[])
     uint32_t addresses[1000]; //array para armazenar os endereços (uint32_t é um tipo de dado inteiro sem sinal de 32 bitss)
     size_t address_count = 0; //contador de endereços válidos (size_t é um tipo de dado inteiro sem sinal que é usado para representar o tamanho de objetos em bytes)
 
-    line[strcspn(line, "\r\n")] = '\0';//removendo o caractere de nova linha do final da string
+    while (fgets(line, sizeof(line), address_file))
+    {
+        //removendo o \n (e o \r, se for Windows) do final da linha
+        line[strcspn(line, "\r\n")] = '\0';
 
-    char *endptr;
-    errno = 0; //zera o errno (ultimo erro registrado) antes de chamar strtoul para detectar erros de conversão
+        //converte a linha para número; aceita espaço no começo e no fim
+        char *endptr;
+        errno = 0;
+        unsigned long parsed = strtoul(line, &endptr, 10);
+        int overflow = (errno == ERANGE);
 
-    unsigned long parsed = strtoul(line, &endptr, 10); //strtoul converte a string para um número inteiro sem sinal (unsigned long) e armazena o endereço do primeiro caractere inválido em endptr
-    int overflow = (errno == ERANGE); //verifica se houve estouro de valor (ERANGE é um macro que indica que o valor convertido está fora do intervalo representável pelo tipo de dado)
+        //ignora espaços que sobraram depois do número
+        while (isspace((unsigned char)*endptr))
+        {
+            endptr++;
+        }
 
-    while (isspace((unsigned char)*endptr)) {
-        endptr++; //verifica se há espaços em branco após o número convertido e avança o ponteiro endptr para o próximo caractere não branco
+        //se não leu nenhum digito, sobrou lixo ou passou da faixa, rejeita
+        if (endptr == line || *endptr != '\0' || overflow || parsed > 65535)
+        {
+            fprintf(stdout, "Endereço inválido no arquivo: %s\n", line);
+            fclose(address_file);
+            return 1;
+        }
+
+        if (address_count >= 1000)
+        {
+            fprintf(stderr, "Muitos enderecos.\n");
+            fclose(address_file);
+            return 1;
+        }
+
+        addresses[address_count++] = (uint32_t)parsed;
     }
-
-    if (endptr == line || *endptr != '\0' || overflow || parsed > 65535) {
-        fprintf(stdout, "Endereço inválido no arquivo: %s\n", line);
-        fclose(address_file);
-        return 1;
-    }
-
-        int address = (int)parsed;
 
         //fazendo o corte para separar as partes do endereço int
         //8 (0 bit ao 7 bit)-> offset; 8 (8 bit ao 15 bit) -> numero da pagina
