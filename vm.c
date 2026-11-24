@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
     uint32_t addresses[1000]; //array para armazenar os endereços (uint32_t é um tipo de dado inteiro sem sinal de 32 bitss)
     size_t address_count = 0; //contador de endereços válidos (size_t é um tipo de dado inteiro sem sinal que é usado para representar o tamanho de objetos em bytes)
 
+
     while (fgets(line, sizeof(line), address_file))
     {
         //removendo o \n (e o \r, se for Windows) do final da linha
@@ -196,6 +197,14 @@ int main(int argc, char *argv[])
             fclose(address_file);
             return 1;
         }
+
+
+        FILE* correct_file = fopen("correct.txt", "w");
+            if (correct_file == NULL)
+            {
+                fprintf(stderr, "Error opening correct.txt\n");
+                return 1;
+            }
 
         for (size_t i = 0; i < address_count; i++)
         {
@@ -396,19 +405,20 @@ int main(int argc, char *argv[])
 
             int physical_address = frame * 256 + offset;
 
-            fprintf(stdout, "Virtual address: %u TLB: %d Physical address: %d Value: %d\n",
+            
+            fprintf(correct_file, "Virtual address: %u TLB: %d Physical address: %d Value: %d\n",
                     addresses[i], tlb_index, physical_address,
                     (int)physical_memory[frame][offset]);
         }
 
         fclose(backing_store);
         fclose(address_file);
-
-        fprintf(stdout, "Number of Translated Addresses = %zu\n", address_count);
-        fprintf(stdout, "Page Faults = %d\n", page_faults);
-        fprintf(stdout, "Page Fault Rate = %.3f\n", address_count ? (double)page_faults / (double)address_count : 0.0);
-        fprintf(stdout, "TLB Hits = %d\n", tlb_hits);
-        fprintf(stdout, "TLB Hit Rate = %.3f\n", address_count ? (double)tlb_hits / (double)address_count : 0.0);
-
+        
+        fprintf(correct_file, "Number of Translated Addresses = %zu\n", address_count);
+        fprintf(correct_file, "Page Faults = %d\n", page_faults);
+        fprintf(correct_file, "TLB Hits = %d\n", tlb_hits);
+        fprintf(correct_file, "TLB Hit Rate = %.3f\n", address_count ? (double)tlb_hits / (double)address_count : 0.0);
+        fclose(correct_file);
+        
         return 0;
     }
