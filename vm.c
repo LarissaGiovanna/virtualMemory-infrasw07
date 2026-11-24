@@ -198,13 +198,14 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-
         FILE* correct_file = fopen("correct.txt", "w");
-            if (correct_file == NULL)
-            {
-                fprintf(stderr, "Error opening correct.txt\n");
-                return 1;
-            }
+        if (correct_file == NULL)
+        {
+            fprintf(stderr, "Error opening correct.txt\n");
+            fclose(backing_store);
+            fclose(address_file);
+            return 1;
+        }
 
         for (size_t i = 0; i < address_count; i++)
         {
@@ -412,9 +413,10 @@ int main(int argc, char *argv[])
 
         fclose(backing_store);
         fclose(address_file);
-        
+
         fprintf(correct_file, "Number of Translated Addresses = %zu\n", address_count);
         fprintf(correct_file, "Page Faults = %d\n", page_faults);
+        fprintf(correct_file, "Page Fault Rate = %.3f\n", address_count ? (double)page_faults / (double)address_count : 0.0);
         fprintf(correct_file, "TLB Hits = %d\n", tlb_hits);
         fprintf(correct_file, "TLB Hit Rate = %.3f\n", address_count ? (double)tlb_hits / (double)address_count : 0.0);
         fclose(correct_file);
