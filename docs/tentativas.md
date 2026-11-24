@@ -303,16 +303,274 @@ Evidência:
 
 ---
 
+## 2026-11-23 22:08 — Prompt 10 — Análise e novo modo de trabalho
+
+Prompt:
+
+> analise meu codigo ate agora e atualize nosso cronograma. a partir de agora, eu irei te pedir para implementar algumas coisas e eu vou validar, por conta de nosso curto periodo de tempo
+
+O que tentei:
+
+- Analisar o `vm.c` atual, rodar o build e executar o programa.
+- Testar também em `/tmp` com a backing store no nome esperado pelo código.
+- Comparar o que existe com o cronograma e com a rubrica.
+
+Resultado:
+
+- Já existem: parser lendo 1000 endereços, page table de 256 entradas, memória física de 128 frames, alocação inicial por page fault e contagem de page faults.
+- O programa abre `backing_store.bin`, mas o arquivo real é `BACKING_STORE.bin`; em Linux isso falha por diferença de maiúsculas/minúsculas.
+- Com o nome corrigido em `/tmp`, o programa chega até “Memória física cheia” na página 190, porque ainda não há substituição.
+- Faltam: FIFO/LRU de página, saída de endereço físico e byte, estatísticas, TLB, threads, `diff` com `correct.txt`, README, relatório e pacote.
+- Novo modo de trabalho: o assistente implementa um bloco por vez; a aluna compila, roda a validação e confirma antes do próximo bloco.
+- Cronograma atualizado para a revisão 3 em `docs/cronograma.md`, com corte dos fluxos de 256 frames/sem TLB para priorizar o núcleo e o relatório.
+
+Evidência:
+
+- Data/hora: 2026-11-23 22:08:09 -03.
+- `./vm addresses.txt lru fifo` no repositório: `Erro ao abrir o arquivo backing_store.bin`, `run_exit=1`.
+- Em `/tmp`, com `backing_store.bin`: `Memória física cheia. Não é possível carregar a página 190`, `exit=1`.
+- Build com warning de `offset` não usado.
+
+---
+
+## 2026-11-23 22:32 — Prompt 11 — Erro na página 190
+
+Prompt:
+
+> ok. corrigi o nome do arquivo e ele abriu, mas esta dizendo que nao conseguiu carregar a pagina 190
+
+O que tentei:
+
+- Corrigir o nome da backing store para `BACKING_STORE.bin`.
+- Rodar o programa com `addresses.txt`.
+- Verificar em qual ponto do arquivo a página 190 aparece e quantas páginas únicas existem.
+
+Resultado:
+
+- O erro agora é esperado: os 128 frames livres foram preenchidos e a página 190 é a **129ª página única** do arquivo.
+- Primeira ocorrência da página 190: linha 172, endereço lógico 48855.
+- O arquivo tem 244 páginas únicas; portanto, 116 páginas precisam de substituição.
+- O código ainda não tem FIFO/LRU; o `if (next_frame >= 128)` apenas encerra o programa.
+- Próximo passo: implementar substituição de página FIFO e LRU.
+
+Evidência:
+
+- Data/hora: 2026-11-23 22:32:56 -03.
+- Simulação sobre `addresses.txt`: página 190 = 129ª única; total de 244 páginas únicas.
+- `vm.c` linha 134: `if (next_frame >= 128)`.
+
+---
+
+## 2026-11-23 22:37 — Prompt 12 — FIFO/LRU de página
+
+Prompt:
+
+> certo. implemente a parte do fifo e do lru da pagina para eu validar
+
+O que tentei:
+
+- Substituir o `return 1` de “memória física cheia” por escolha de vítima.
+- Manter `frame_to_page[128]` para saber qual página ocupa cada frame.
+- Manter `frame_order[128]`: no FIFO guarda a ordem de carga; no LRU guarda o instante do último acesso.
+- `access_clock` incrementa a cada carga e, no LRU, também a cada acesso a página já presente.
+- No page fault com memória cheia: escolhe o frame de menor `frame_order`, invalida a página antiga, lê a nova página e atualiza tabela e mapa reverso.
+- Verificar `fseek` e `fread`.
+- Deixar `Page faults = %d` em `stderr` como diagnóstico temporário.
+
+Resultado:
+
+- Build sem warnings.
+- `./vm addresses.txt lru fifo` → `Page faults = 539`.
+- `./vm addresses.txt fifo fifo` → `Page faults = 538`.
+- `lru fifo` repetido 5 vezes: sempre 539.
+- Harness temporário (fora do repositório) confirmou 1000/1000 pares (endereço físico, valor) iguais aos de `correct.txt` para a LRU.
+- FIFO conferido contra simulação independente em Python: 1000/1000.
+- Parser ainda rejeita `12 34`, `abc` e `65536`; aceita `12107 ` com espaço final.
+- Ainda não há saída oficial em `stdout`; só o diagnóstico em `stderr`.
+
+Evidência:
+
+- Data/hora: 2026-11-23 22:37:35 -03.
+- `make clean && make` → `build_exit=0`.
+- `./vm addresses.txt lru fifo` → `Page faults = 539`, `lru_exit=0`.
+- `./vm addresses.txt fifo fifo` → `Page faults = 538`, `fifo_exit=0`.
+- Simulação: 244 páginas únicas no arquivo; 116 substituições.
+
+---
+
+## 2026-11-23 22:42 — Prompt 13 — Saída oficial, estatísticas e TLB (bloco validado pela aluna)
+
+Prompt anterior validado pela aluna:
+
+> fifo lru -> page faults 538
+> lru fifo -> page faults 539
+> fifo fifo -> page faults 538
+> lru lru -> page faults 539
+
+O que tentei neste bloco:
+
+- Implementar a TLB com 16 entradas, FIFO/LRU pelo `argv[3]`.
+- Consultar a TLB antes da page table.
+- Inserir a página na TLB a cada TLB miss (após resolver pela page table).
+- Invalidar a entrada da TLB quando a página é substituída na memória física.
+- Atualizar a recência da página também em TLB hit, para o LRU de página continuar correto.
+- Imprimir `Virtual address`, `TLB`, `Physical address` e `Value` em `stdout`.
+- Imprimir as cinco estatísticas finais no formato do `correct.txt`.
+- Remover o diagnóstico `Page faults` de `stderr`.
+
+Resultado:
+
+- Primeira tentativa deu 537 page faults e `diff` diferente: o TLB hit não atualizava a recência do LRU de página.
+- Corrigido: `./vm addresses.txt lru fifo` ficou com 539 page faults, 54 TLB hits e `diff -q correct.txt` com `exit=0`.
+- 10 execuções seguidas de `lru fifo`: `diff` zero em todas.
+- Combinações medidas:
+  - `lru fifo`: 539 page faults, 54 TLB hits
+  - `fifo fifo`: 538 page faults, 54 TLB hits
+  - `lru lru`: 539 page faults, 55 TLB hits
+  - `fifo lru`: 538 page faults, 55 TLB hits
+- Nenhuma saída em `stderr`.
+- Build sem warnings.
+
+Evidência:
+
+- Data/hora: 2026-11-23 22:42:58 -03.
+- `diff -q correct.txt /tmp/out.txt` → `diff_q_exit=0`.
+- `make clean && make` → sem warnings.
+
+---
+
+## 2026-11-23 22:47 — Prompt 14 — Busca na TLB com uma thread por entrada
+
+Prompt/validação anterior:
+
+> faltou compilar e rodar. agora resultou o diff resultou em 0
+
+O que tentei:
+
+- Adicionar `#include <pthread.h>`.
+- Criar `TlbSearchArg` e a função `tlb_search_entry`, que verifica **uma única** entrada.
+- Em cada endereço: criar 16 threads, uma por entrada da TLB, e aguardar todas com `pthread_join`.
+- Cada thread escreve apenas no seu próprio `search_args[t]`, sem mutex.
+- Depois do join, a primeira entrada com `hit` vira o índice da TLB mostrado na saída.
+- Tratar falha de `pthread_create` com mensagem em `stderr` e `return 1`.
+
+Resultado:
+
+- `diff -q correct.txt` → `diff_exit=0`.
+- 10 execuções seguidas de `lru fifo`: `diff` zero em todas.
+- Combinações: `fifo fifo` 54 hits, `lru lru` 55, `fifo lru` 55; nada em `stderr`.
+- Tempo de `./vm addresses.txt lru fifo`: ~0,36 s.
+- Build sem warnings.
+
+Evidência:
+
+- Data/hora: 2026-11-23 22:47 -03.
+
+---
+
+## 2026-11-23 23:06 — Prompt 15 — Fluxos da rubrica (256 frames, sem TLB, sem threads)
+
+Prompt:
+
+> vamos fazer todas as rubricas do enunciado (preciso da nota toda). sobre os outros fluxos, como é possivel fazer o fluxo da tlb com 256 frames sendo que estamos trabalhando com 128?
+
+O que tentei:
+
+- Explicar que 256 frames × 256 bytes = 65.536 bytes, o tamanho inteiro da backing store, então o fluxo de 256 frames não tem substituição; ele existe no projeto original do livro e na rubrica, enquanto o enunciado modificado pede 128 frames.
+- Parametrizar o `vm.c` com macros: `FRAMES` (128 padrão), `USE_TLB` (1 padrão) e `USE_THREADS` (1 padrão).
+- Manter o alvo `make` gerando `vm` exatamente como antes.
+- Criar alvos separados no `makefile`:
+  - `vm_notlb`: 128 frames, sem TLB.
+  - `vm256`: 256 frames, sem TLB.
+  - `vm_seq`: 128 frames, TLB sem threads.
+  - `all`: compila os quatro.
+- No fluxo sem TLB, imprimir `TLB: -1` e estatísticas de TLB zeradas.
+
+Resultado:
+
+- `make` → `vm` com `diff` zero contra `correct.txt`.
+- `vm_seq` (TLB sem thread) → `diff` zero e mesmos 539 page faults / 54 hits.
+- `vm_notlb` 128 frames: 539 faults no LRU e 538 no FIFO; endereço físico e valor batem com `correct.txt` (LRU) e com simulação FIFO.
+- `vm256`: 244 page faults (244 páginas únicas), sem substituição; endereço físico e valor batem com simulação independente.
+- Nenhuma saída em `stderr`; build sem warnings.
+
+Evidência:
+
+- Data/hora: 2026-11-23 23:06:02 -03.
+- `make all` compila `vm`, `vm_notlb`, `vm256`, `vm_seq`.
+- `diff -q correct.txt` em `vm` e `vm_seq` → 0.
+- `vm256` → `Page Faults = 244`, `TLB Hits = 0`.
+
+---
+
+## 2026-11-23 23:15 — Prompt 16 — Fluxos em um único executável
+
+Prompt:
+
+> veja, entendi que temos que compilar com outras flags, mas o enunciado diz que temos que ter um executável só. é possivel fazer esse mesmo processo gerando um unico executavel?
+
+O que tentei:
+
+- Trocar as macros de compilação por configuração em tempo de execução via variáveis de ambiente.
+- Manter `make` gerando apenas `vm`, com a interface de 3 argumentos intacta.
+- Padrões iguais aos do enunciado: 128 frames, TLB ligada, threads ligadas.
+- `VM_FRAMES` aceita 1–256 e valida o valor; `VM_TLB=0` desliga a TLB; `VM_THREADS=0` desliga as threads.
+- `physical_memory` passou a ser `[256][256]` e o limite usado é `frame_limit`.
+- Remover os alvos `vm_notlb`, `vm256` e `vm_seq` do `makefile`; `make clean` apaga resíduos desses nomes.
+
+Resultado:
+
+- `make` → só `vm`.
+- `./vm addresses.txt lru fifo` → `diff` zero e 10 execuções sem diferença.
+- `VM_THREADS=0 ./vm addresses.txt lru fifo` → `diff` zero.
+- `VM_TLB=0 ./vm addresses.txt lru fifo` → 539 faults, 0 hits, físico/valor iguais ao `correct.txt`.
+- `VM_TLB=0 VM_FRAMES=256 ./vm addresses.txt lru fifo` → 244 faults, 0 hits, físico/valor iguais à simulação.
+- `VM_FRAMES=300` e `VM_FRAMES=abc` → erro e `exit=1`.
+- Build sem warnings.
+
+Evidência:
+
+- Data/hora: 2026-11-23 23:15 -03.
+- `make clean; make` gera somente `vm`.
+
+---
+
+## 2026-11-24 10:42 — Prompt 17 — README e decisão dos fluxos
+
+Prompt:
+
+> sobre a decisão dos fluxos diferentes, conversei com varias pesoas e elas fizeram de formas diferentes. ou seja, nao tem um padrao especifico. precisamos que tenha um unico arquivo e um unico executável apenas. vamos seguir com essa ideia que vc tinha dito para compilar com as variaveis diferentes. documente isso no readme e diga como posso colocar essa parte no relatorio
+
+O que tentei:
+
+- Confirmar que a implementação atual já tem um único `vm.c`, um Makefile e um único executável `vm`.
+- Escrever o `README.md` com: descrição, arquivos, compilação, execução, formato da saída, fluxos por variável de ambiente, tratamento de erros, resultados medidos, validação e organização do código.
+- Registrar a decisão: os fluxos da rubrica são reproduzidos no mesmo `vm` por `VM_FRAMES`, `VM_TLB` e `VM_THREADS`, mantendo a interface de 3 argumentos.
+
+Resultado:
+
+- README substituiu o template do professor.
+- Interface padrão inalterada: sem variáveis, 128 frames + TLB + threads.
+- Nenhuma mudança de código neste passo.
+
+Evidência:
+
+- Data/hora: 2026-11-24 10:42:11 -03.
+
+---
+
 ## Pendências registradas
 
-- [ ] Corrigir `line[strcspn(line, "\r\n")] = '0';` para `'\0'`.
-- [ ] Tratar o espaço no fim da última linha de `addresses.txt`.
-- [ ] Implementar a validação com `strtoul`, `endptr`, `errno` e `ERANGE`.
-- [ ] Usar os vetores `offsets` e `page_numbers` na tradução (ou removê-los).
-- [ ] Implementar page table com 256 entradas e 128 frames.
-- [ ] Implementar FIFO/LRU de página.
+- [x] Corrigir `line[strcspn(line, "\r\n")] = '0';` para `'\0'`.
+- [x] Tratar o espaço no fim da última linha de `addresses.txt`.
+- [x] Implementar a validação com `strtoul`, `endptr`, `errno` e `ERANGE`.
+- [x] Usar os vetores `offsets` e `page_numbers` na tradução (ou removê-los).
+- [x] Implementar page table com 256 entradas e 128 frames.
+- [x] Implementar FIFO/LRU de página.
+- [ ] Remover o diagnóstico `Page faults` de `stderr` quando a saída oficial existir.
+- [ ] Imprimir a saída oficial (`Virtual address`, `TLB`, `Physical address`, `Value`) e as estatísticas.
 - [ ] Implementar TLB FIFO/LRU e busca com threads.
-- [ ] Comparar a saída com `docs/correct.txt`.
+- [ ] Comparar a saída com `correct.txt`.
 
 ## Observação
 

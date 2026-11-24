@@ -1,177 +1,138 @@
 # Cronograma revisado — Memória Virtual
 
-**Revisão 2:** 2026-11-20 00:39 -03
+**Revisão 3:** 2026-11-23 22:06 -03
 **Entrega:** terça 24/11/2026 até 23:59
-**Premissa:** sexta 20, sábado 21 e domingo 22 continuam indisponíveis. Segunda e terça têm aula pela manhã; o trabalho acontece à tarde, à noite e madrugando.
-**Carga real:** cerca de 10h na segunda + 9h na terça = **~19h**. É apertado; se você perder 2h, corte os extras, não o relatório.
+**Modo de trabalho a partir de agora:** o assistente implementa um bloco; você compila, roda o comando de validação e confirma. Se falhar, você cola a saída e o bloco é corrigido antes de avançar.
 
-## Auditoria 23/11, 15:33 — status real
+## Status atual medido (23/11, 22:06)
 
-O plano de 20/11 está atrasado: o bloco das 13:30–18:00 passou sem o núcleo começar. Estado medido agora:
+Já existe:
 
-- `make clean && make` compila, com 3 warnings de variáveis não usadas.
-- `while (fgets(...))` restaurado às 15:43; o parser lê os 1000 endereços e termina com `exit=0`.
-- Ainda não há tradução, `BACKING_STORE.bin`, page table em uso, FIFO/LRU, TLB, threads nem estatísticas.
-- README ainda é o template; relatório e pacote de entrega: **não existem**.
+- [x] Makefile gera `vm` e `make clean` funciona.
+- [x] Validação de `argc`, arquivo e algoritmos `fifo`/`lru`.
+- [x] Parser com `strtoul` lê os 1000 endereços.
+- [x] Máscara de página/offset.
+- [x] Page table com 256 entradas.
+- [x] Memória física com 128 frames de 256 bytes.
+- [x] Alocação dos 128 primeiros frames e leitura da backing store por page fault.
+- [x] Contagem de page faults (ainda não impressa).
+- [x] Nome da backing store corrigido para `BACKING_STORE.bin`.
 
-### Plano de recuperação a partir de 15:40
+Ainda falta:
 
-| Horário | Tarefa | Checkpoint |
+- [x] Implementar substituição de página FIFO e LRU quando os 128 frames encherem.
+  - LRU: 539 page faults; bateu endereço físico e valor com `correct.txt`.
+  - FIFO: 538 page faults; bateu com simulação independente.
+  - Diagnóstico temporário `Page faults = ...` foi removido quando a saída oficial entrou.
+- [x] Calcular e imprimir endereço físico e byte.
+- [x] Imprimir estatísticas no formato do `correct.txt`.
+- [x] Implementar TLB FIFO/LRU (sequencial).
+- [x] Implementar a busca na TLB com uma thread por entrada (16 threads por consulta, `diff` zero em 10 execuções).
+- [x] Fechar o `diff` com `correct.txt` para `lru fifo`.
+- [x] Fluxos da rubrica em um único `vm`, via variáveis de ambiente: `VM_FRAMES`, `VM_TLB=0`, `VM_THREADS=0`.
+- [x] README completo, com compilação, uso, fluxos por variável de ambiente, erros, resultados e validação.
+- [ ] Relatório, PDF e pacote de entrega.
+
+Teste de agora:
+
+```text
+./vm addresses.txt lru fifo > /tmp/out.txt
+diff -q correct.txt /tmp/out.txt   # exit=0
+Number of Translated Addresses = 1000
+Page Faults = 539
+Page Fault Rate = 0.539
+TLB Hits = 54
+TLB Hit Rate = 0.054
+```
+
+10 execuções seguidas de `lru fifo` deram `diff` zero. Combinações: `fifo fifo` 538/54, `lru lru` 539/55, `fifo lru` 538/55.
+
+## Prioridade
+
+1. Backing store + checagens de `fseek`/`fread`.
+2. Substituição de página FIFO e LRU.
+3. Saída: endereço físico + valor + estatísticas.
+4. TLB FIFO/LRU sem thread.
+5. `diff` zero com `correct.txt`.
+6. TLB com thread.
+7. Erros, README, relatório e entrega.
+
+**Corte já decidido:** não implementar os fluxos separados de 256 frames/sem TLB. Eles valem 20% da rubrica, mas não cabem nas ~12h restantes. Se sobrar tempo na terça, fazer só uma flag simples de compilação.
+
+## Segunda 23/11 — noite/madrugada
+
+| Horário | Bloco | Validação sua |
 |---|---|---|
-| 15:40–16:10 | Recolocar o `while (fgets(...))` e fechar o parser com `strtoul`/`errno` | 1000 endereços lidos, sem debug |
-| 16:10–18:00 | Page table 256 + `BACKING_STORE.bin` + 128 frames + tradução | Byte correto para todos os endereços |
+| 22:10–22:30 | Corrigir caminho `BACKING_STORE.bin`, abrir uma vez, checar `fseek`/`fread`, imprimir endereço físico e byte | `./vm addresses.txt lru fifo` passa dos 128 frames; byte correto |
+| 22:30–23:30 | FIFO e LRU de página, escolhidos por `argv[2]` | Roda os 1000 endereços sem “memória cheia” |
+| 23:30–00:30 | TLB FIFO/LRU sem thread + formato exato + estatísticas | `diff` zero em `lru fifo` |
+| 00:30–01:45 | TLB com 16 threads por consulta | `diff` zero em 10 execuções |
+| 01:45–02:00 | Commit, log e anotações para o relatório | Baseline congelada |
+| 02:00–02:30 | Buffer máximo | Só bug que impeça o `diff` |
+
+**Checkpoint decisivo:** 00:30 com `diff` zero. Se não chegar, não faça threads; corrija a TLB sequencial e durma.
+
+## Terça 24/11 — fechamento
+
+| Horário | Bloco | Validação sua |
+|---|---|---|
+| 13:30–14:30 | Terminar threads ou corrigir o que ficou da noite | `diff` zero em 10 execuções |
+| 14:30–15:30 | Erros, warnings, valgrind/ASan | Casos inválidos + build limpo |
+| 15:30–18:00 | Relatório com evidências reais | PDF quase pronto |
 | 18:00–19:00 | Pausa | — |
-| 19:00–20:30 | FIFO e LRU de página | Page faults coerentes |
-| 20:30–22:00 | TLB FIFO/LRU sem thread | `diff` zero em `lru fifo` |
-| 22:00–00:00 | TLB com thread | `diff` zero em 10 execuções |
-| 00:00–01:00 | Erros, warnings, commit e log | Baseline congelada |
-| 01:00–02:00 | Buffer | Só bug que impeça o `diff` |
-
-**Se 18:00 chegar sem tradução funcionando:** corte 256 frames, fluxos sem TLB e threads. Faça 128 frames + FIFO/LRU + TLB sequencial + relatório.
-
-### Terça 24/11 — plano B se o núcleo atrasar
-
-| Horário | Tarefa |
-|---|---|
-| 13:30–16:00 | Corrigir o núcleo e rodar 10 vezes |
-| 16:00–18:30 | Relatório com o que funcionar |
-| 19:00–21:00 | README, PDF, tar e teste de extração |
-| 21:00–22:30 | Enviar e conferir; **não passar de 22:30** |
-
-## Estado em 20/11 (histórico)
-
-- [x] `make` compila e gera `vm`.
-- [x] `argc != 4` corrigido.
-- [x] `line[strcspn(line, "\r\n")] = '\0'` corrigido.
-- [x] Máscara de página/offset escrita corretamente.
-- [ ] Parser lê 999 de 1000 endereços: falha no último `12107 ` por causa do espaço.
-- [ ] Ainda imprime `Caractere lido:` para cada dígito.
-- [ ] Tradução para endereço físico não implementada.
-- [ ] Page table não está sendo usada.
-- [ ] FIFO/LRU de página não implementados.
-- [ ] TLB e threads não implementados.
-- [ ] Estatísticas e `diff` com `docs/correct.txt` não feitos.
-- [ ] README e relatório não finalizados.
-
-## Ordem de prioridade
-
-1. **Fechar o parser** e ler os 1000 endereços sem debug.
-2. **Traduzir endereço** com page table, `BACKING_STORE.bin` e 128 frames.
-3. **FIFO e LRU de página**.
-4. **TLB FIFO/LRU sem thread**, até o `diff` zero com `docs/correct.txt`.
-5. **TLB com thread**.
-6. **Tratamento de erro + README + relatório**.
-7. **Empacotamento e envio**.
-
-O relatório vale 20%, README/Makefile 10% e tratamento de erro 10%. Não sacrifique esses 40% para tentar ganhar os 10% do fluxo com 256 frames.
-
-## Segunda 23/11 — núcleo funcionando
-
-| Horário | Tarefa | Saída/checkpoint |
-|---|---|---|
-| 13:30–14:00 | Trocar o loop de caracteres por `strtoul` + `endptr` + `errno`; aceitar `12107 `; remover prints de debug | 1000 endereços lidos, `exit=0` |
-| 14:00–16:00 | Page table com 256 entradas, `BACKING_STORE.bin`, 128 frames, tradução e saída | Endereço físico + byte; invariante do byte |
-| 16:00–17:00 | FIFO de página + lista de frames livres | Page faults; checker independente |
-| 17:00–18:00 | LRU de página | Mapeamento de frames coerente |
-| 18:00–19:00 | Jantar/pausa | — |
-| 19:00–20:30 | TLB FIFO/LRU **sem threads** e formato exato | **`diff` zero em `lru fifo`** |
-| 20:30–22:30 | TLB com 16 threads por consulta | `diff` zero em 10 execuções |
-| 22:30–00:30 | Tratamento de erro, warnings, valgrind/ASan | Matriz de erros + build limpo |
-| 00:30–01:00 | Commit, log salvo e esqueleto do relatório | Baseline congelada |
-| 01:00–02:00 | **Buffer** só para bug que impede o `diff` | Não começar feature nova |
-
-**Checkpoint mais importante:** até 20:30 a saída de `./vm addresses.txt lru fifo` precisa ser idêntica a `docs/correct.txt`. Sem isso, não avance para threads.
-
-### Se madrugar
-
-Pare às 02:00. Código depois de 3h de sono rende menos que código descansado. Se não conseguiu dormir, pelo menos não comece uma feature nova às 02:00; use o tempo para testar e registrar evidência.
-
-## Terça 24/11 — robustez, relatório e entrega
-
-| Horário | Tarefa | Saída/checkpoint |
-|---|---|---|
-| 13:30–15:00 | Build do zero, 10 execuções, `-Wall -Wextra -Werror`, ASan/UBSan, valgrind | Tudo estável |
-| 15:00–16:00 | **Opcional:** fluxos 256 frames / sem TLB / TLB sem thread e evidência | Logs dos fluxos |
-| 16:00–18:00 | Relatório seções 1–8 + checklist + prints | PDF quase pronto |
-| 18:00–19:00 | Jantar/pausa | — |
-| 19:00–20:30 | README, Makefile, `lgsc/`, `lgsc.tar`, PDF | Pacote montado |
-| 20:30–21:30 | Extrair o tar em `/tmp`, compilar e rodar; subir GitHub e Classroom | Arquivos enviados |
-| 21:30–22:30 | Baixar o que foi enviado, conferir nomes e conteúdo; buffer | **Enviar até 22:30** |
-| 22:30–23:59 | Reserva para problema de upload | Não deixar para 23:59 |
+| 19:00–20:30 | README, PDF, `lgsc.tar`, teste de extração | Tar compila em `/tmp` |
+| 20:30–21:30 | GitHub + Classroom; baixar e conferir o envio | Entrega confirmada |
+| 21:30–22:30 | Buffer e confirmação final | **Enviar até 22:30** |
 
 ## Pontos de corte
 
-- **Segunda 18:00 sem tradução funcionando:** esqueça 256 frames, sem TLB e threads. Faça 128 frames + FIFO/LRU + TLB sequencial + relatório.
-- **Segunda 22:30 sem `diff` zero:** pare as threads. O `diff` zero vale mais que a thread; corrija a TLB sequencial primeiro.
-- **Terça 15:00 sem `diff` zero:** cancele os fluxos opcionais e use o tempo para corrigir o núcleo e salvar o relatório.
-- **Terça 18:00:** congele o código. Só relatório, PDF e empacotamento.
-- **Threads instáveis:** entregue a TLB sequencial, registre a limitação no relatório e não troque o que funciona por um recurso que quebra o `diff`.
+- **23:00 sem substituição de página:** implemente só FIFO primeiro; LRU depois. Sem isso não há `diff`.
+- **00:30 sem `diff` zero:** cancele threads. Entregue TLB sequencial.
+- **Terça 15:30 sem `diff` zero:** cancele relatório “bonito”; use o template e entregue o que existe, com limitações registradas.
+- **Terça 18:00:** congele o código. Só relatório, PDF e tar.
+- **Threads quebrando o `diff`:** remova as threads e mantenha a versão sequencial. O `diff` zero vale mais.
 
-## Escopo mínimo para não zerar
+## Escopo mínimo aceitável
 
-Se o tempo acabar, priorize nesta ordem:
+Se o tempo acabar, entregue:
 
-1. Parser lendo 1000 endereços.
-2. Page table 256 + 128 frames + `BACKING_STORE.bin`.
-3. Tradução e byte corretos.
-4. LRU de página (é o que a referência `correct.txt` usa).
-5. TLB FIFO sem thread, para bater o formato e as estatísticas.
-6. Tratamento de erro dos argumentos e do arquivo.
-7. README + Makefile.
-8. Relatório com evidências reais.
-9. Tar + PDF.
+- parser lendo 1000 endereços;
+- page table + 128 frames + `BACKING_STORE.bin`;
+- FIFO e LRU de página;
+- endereço físico, byte e estatísticas;
+- TLB FIFO/LRU sequencial com `diff` zero;
+- tratamento de erro;
+- README;
+- relatório com o que foi feito e limitações;
+- tar + PDF.
 
-Isso já cobre a maior parte da rubrica. **TLB com thread** e **fluxos com 256 frames/sem TLB** são os extras a cortar primeiro.
+Isso cobre a maior parte da rubrica. Threads e fluxos com 256 frames são os primeiros cortes.
 
-## Se abrir uma janela no fim de semana
-
-Não conte com isso, mas se conseguir 2–4h:
-
-- **2h:** feche o parser e implemente a tradução com 256 frames + `BACKING_STORE.bin`.
-- **4h:** adiante FIFO/LRU e a TLB sequencial até o `diff` zero.
-- **1h:** escreva o esqueleto do relatório e o README.
-
-Qualquer avanço no fim de semana reduz o risco de a segunda virar uma noite perdida.
-
-## Alvos de aceitação
-
-| Cenário | Page faults | TLB hits | Validação |
-|---|---:|---:|---|
-| `lru fifo` (128 frames) | 539 / 0.539 | 54 / 0.054 | `diff` exato com `docs/correct.txt` |
-| `fifo fifo` (128 frames) | 538 / 0.538 | 54 / 0.054 | Invariante do byte + estatísticas |
-| `lru lru` (128 frames) | 539 / 0.539 | 55 / 0.055 | Invariante do byte + estatísticas |
-| 256 frames | 244 / 0.244 | 54 ou 55 | Sem substituição; 244 páginas únicas |
-
-O campo `TLB:` do `correct.txt` é o **índice da entrada da TLB (0–15)**, não o frame.
-
-## Comandos de checkpoint
+## Comandos de validação
 
 ```bash
 make clean && make
 
-./vm addresses.txt lru fifo > /tmp/saida_lru_fifo.txt
-diff -u docs/correct.txt /tmp/saida_lru_fifo.txt
+./vm addresses.txt lru fifo > /tmp/saida.txt
+diff -u correct.txt /tmp/saida.txt
 
 for i in $(seq 1 10); do
     ./vm addresses.txt lru fifo > /tmp/saida_$i.txt || exit 1
-    diff -q docs/correct.txt /tmp/saida_$i.txt || exit 1
+    diff -q correct.txt /tmp/saida_$i.txt || exit 1
 done
 ```
-
-Para validar o byte sem depender da TLB, use um checker independente em Python: para cada linha, o valor deve ser o byte assinado de `BACKING_STORE.bin` no endereço lógico original.
 
 ## Evidência
 
 - `script -a evidencias.log` em toda sessão.
-- `date; whoami; pwd` no começo.
-- Commit a cada checkpoint: parser, tradução, FIFO, LRU, TLB, threads, relatório.
-- Registre o comando e a saída do `diff`, inclusive quando falhar.
-- Não edite o log depois.
+- Commit depois de cada bloco validado.
+- Se um bloco falhar, colar a saída exata no chat e não avançar.
+- Não editar o log depois.
 
 ## Entrega
 
-**GitHub:** código, Makefile, README, `evidencias.log` e `lgsc.pdf`.
+**GitHub:** código, Makefile, README, `evidencias.log`, `lgsc.pdf`.
 
-**Classroom:** `lgsc.pdf` + `lgsc.tar`. Dentro do tar: pasta `lgsc/` com código, Makefile, README e `evidencias.log`. Sem `docs/base`, `addresses.txt`, `correct.txt`, `BACKING_STORE.bin` ou binários.
+**Classroom:** `lgsc.pdf` + `lgsc.tar` com a pasta `lgsc/` contendo código, Makefile, README e `evidencias.log`.
 
-**Meta de envio:** terça 22:30. O prazo é 23:59, mas 1h30 de margem é o mínimo para problema de upload.
+**Meta:** enviar até terça 22:30.

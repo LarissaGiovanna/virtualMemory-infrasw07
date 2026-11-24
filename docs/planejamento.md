@@ -29,6 +29,8 @@
 2. Extrair o frame correspondente da tabela
 3. replace o numero da pagina no endereço logico com o numero do frame
 - offset nao muda e nao é replaced
+- se nao achar o frame correspondente: page fault e aloca o proximo frame disponivle, le 256 bytes do .bin, salva no frame da memoria fisica e atualize a page table
+- endereço fisico = (frame_number * 256) + offset
 
 # fluxo
 - o numero da pagina é extraida do endereço logico e a TLB é consultada
