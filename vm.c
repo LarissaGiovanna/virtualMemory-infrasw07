@@ -19,7 +19,7 @@ typedef struct{
     int last_access;
 }TLB;
 
-int8_t physical_memory[128][256]; //128 frames de 256 bytes cada
+int8_t physical_memory[256][256]; //até 256 frames de 256 bytes cada
 
 typedef struct{
     const TLB *entry;
@@ -64,6 +64,37 @@ int main(int argc, char *argv[])
     {
         fprintf(stdout, "Algoritmo de substituição de página ou TLB inválido. Use 'lru' ou 'fifo'.\n");
         return 1;
+    }
+
+    //fluxos da rubrica: o padrão continua sendo 128 frames, TLB com threads
+    int frame_limit = 128;
+    int use_tlb = 1;
+    int use_threads = 1;
+
+    const char *env_frames = getenv("VM_FRAMES");
+    if (env_frames != NULL)
+    {
+        char *end = NULL;
+        long value = strtol(env_frames, &end, 10);
+        if (end == env_frames || *end != '\0' || value < 1 || value > 256)
+        {
+            fprintf(stderr, "VM_FRAMES inválido: use um valor entre 1 e 256\n");
+            fclose(address_file);
+            return 1;
+        }
+        frame_limit = (int)value;
+    }
+
+    const char *env_tlb = getenv("VM_TLB");
+    if (env_tlb != NULL && strcmp(env_tlb, "0") == 0)
+    {
+        use_tlb = 0;
+    }
+
+    const char *env_threads = getenv("VM_THREADS");
+    if (env_threads != NULL && strcmp(env_threads, "0") == 0)
+    {
+        use_threads = 0;
     }
 
     //lendo os endereços do arquivo
@@ -135,10 +166,10 @@ int main(int argc, char *argv[])
         int tlb_use_lru = (strcmp(tlb_replacement_algorithm, "lru") == 0);
 
         //frame_to_page permite descobrir qual página está em um frame na hora de substituir
-        int frame_to_page[128];
+        int frame_to_page[frame_limit];
         //fifo: ordem de carga; lru: instante do último acesso
-        unsigned long frame_order[128];
-        for (int i = 0; i < 128; i++)
+        unsigned long frame_order[frame_limit];
+        for (int i = 0; i < frame_limit; i++)
         {
             frame_to_page[i] = -1;
             frame_order[i] = 0;
@@ -174,36 +205,55 @@ int main(int argc, char *argv[])
             int frame;
             int tlb_index = -1;
 
-            //procura a página na TLB com uma thread por entrada
-            pthread_t search_threads[16];
-            TlbSearchArg search_args[16];
-            for (int t = 0; t < 16; t++)
+            //procura a página na TLB (quando ela existe)
+            if (use_tlb)
             {
-                search_args[t].entry = &tlb[t];
-                search_args[t].page_number = page_number;
-                search_args[t].hit = 0;
-
-                if (pthread_create(&search_threads[t], NULL, tlb_search_entry, &search_args[t]) != 0)
+                if (use_threads)
                 {
-                    fprintf(stderr, "Erro ao criar thread da TLB\n");
-                    fclose(backing_store);
-                    fclose(address_file);
-                    return 1;
+                    //uma thread por entrada da TLB
+                    pthread_t search_threads[16];
+                    TlbSearchArg search_args[16];
+                    for (int t = 0; t < 16; t++)
+                    {
+                        search_args[t].entry = &tlb[t];
+                        search_args[t].page_number = page_number;
+                        search_args[t].hit = 0;
+
+                        if (pthread_create(&search_threads[t], NULL, tlb_search_entry, &search_args[t]) != 0)
+                        {
+                            fprintf(stderr, "Erro ao criar thread da TLB\n");
+                            fclose(backing_store);
+                            fclose(address_file);
+                            return 1;
+                        }
+                    }
+
+                    for (int t = 0; t < 16; t++)
+                    {
+                        pthread_join(search_threads[t], NULL);
+                    }
+
+                    //a primeira entrada que deu hit é o índice mostrado na saída
+                    for (int t = 0; t < 16; t++)
+                    {
+                        if (search_args[t].hit)
+                        {
+                            tlb_index = t;
+                            break;
+                        }
+                    }
                 }
-            }
-
-            for (int t = 0; t < 16; t++)
-            {
-                pthread_join(search_threads[t], NULL);
-            }
-
-            //a primeira entrada que deu hit é o índice mostrado na saída
-            for (int t = 0; t < 16; t++)
-            {
-                if (search_args[t].hit)
+                else
                 {
-                    tlb_index = t;
-                    break;
+                    //mesma busca, sem threads
+                    for (int t = 0; t < 16; t++)
+                    {
+                        if (tlb[t].valid && tlb[t].page_number == page_number)
+                        {
+                            tlb_index = t;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -230,7 +280,7 @@ int main(int argc, char *argv[])
                 {
                     page_faults++;
 
-                    if (next_frame < 128) //ainda há frame livre
+                    if (next_frame < frame_limit) //ainda há frame livre
                     {
                         frame = next_frame;
                         next_frame++;
@@ -238,7 +288,7 @@ int main(int argc, char *argv[])
                     else //memória cheia: escolhe a vítima
                     {
                         frame = 0;
-                        for (int f = 1; f < 128; f++)
+                        for (int f = 1; f < frame_limit; f++)
                         {
                             //FIFO usa a ordem de carga; LRU usa o último acesso
                             if (frame_order[f] < frame_order[frame])
@@ -255,14 +305,17 @@ int main(int argc, char *argv[])
                             page_table[old_page].frame_number = -1;
 
                             //a página saiu da memória: invalida a entrada dela na TLB
-                            for (int t = 0; t < 16; t++)
+                            if (use_tlb)
                             {
-                                if (tlb[t].valid && tlb[t].page_number == old_page)
+                                for (int t = 0; t < 16; t++)
                                 {
-                                    tlb[t].valid = 0;
-                                    tlb[t].page_number = -1;
-                                    tlb[t].frame_number = -1;
-                                    break;
+                                    if (tlb[t].valid && tlb[t].page_number == old_page)
+                                    {
+                                        tlb[t].valid = 0;
+                                        tlb[t].page_number = -1;
+                                        tlb[t].frame_number = -1;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -304,34 +357,41 @@ int main(int argc, char *argv[])
                 }
 
                 //insere a página na TLB
-                tlb_index = -1;
-                for (int t = 0; t < 16; t++)
+                if (use_tlb)
                 {
-                    if (!tlb[t].valid)
+                    tlb_index = -1;
+                    for (int t = 0; t < 16; t++)
                     {
-                        tlb_index = t;
-                        break;
-                    }
-                }
-
-                if (tlb_index < 0) //TLB cheia: escolhe a vítima
-                {
-                    tlb_index = 0;
-                    for (int t = 1; t < 16; t++)
-                    {
-                        //FIFO usa a ordem de entrada; LRU usa o último acesso
-                        if (tlb_order[t] < tlb_order[tlb_index])
+                        if (!tlb[t].valid)
                         {
                             tlb_index = t;
+                            break;
                         }
                     }
-                }
 
-                tlb[tlb_index].valid = 1;
-                tlb[tlb_index].page_number = page_number;
-                tlb[tlb_index].frame_number = frame;
-                tlb[tlb_index].last_access = ++tlb_clock;
-                tlb_order[tlb_index] = tlb_clock;
+                    if (tlb_index < 0) //TLB cheia: escolhe a vítima
+                    {
+                        tlb_index = 0;
+                        for (int t = 1; t < 16; t++)
+                        {
+                            //FIFO usa a ordem de entrada; LRU usa o último acesso
+                            if (tlb_order[t] < tlb_order[tlb_index])
+                            {
+                                tlb_index = t;
+                            }
+                        }
+                    }
+
+                    tlb[tlb_index].valid = 1;
+                    tlb[tlb_index].page_number = page_number;
+                    tlb[tlb_index].frame_number = frame;
+                    tlb[tlb_index].last_access = ++tlb_clock;
+                    tlb_order[tlb_index] = tlb_clock;
+                }
+                else
+                {
+                    tlb_index = -1; //fluxo sem TLB
+                }
             }
 
             int physical_address = frame * 256 + offset;

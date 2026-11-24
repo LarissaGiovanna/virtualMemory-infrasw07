@@ -1,10 +1,8 @@
 CC = gcc
-CFLAGS = -I. -pthread -Wall -Wextra -pthread
+CFLAGS = -I. -pthread -Wall -Wextra
 
-vm: vm.o
-	$(CC) $(CFLAGS) -o $@ $^
+vm: vm.c
+	$(CC) $(CFLAGS) -o $@ $<
 
-vm.o: vm.c
-	$(CC) $(CFLAGS) -c $< -o $@
 clean:
-	rm -f vm *.o
+	rm -f vm vm_notlb vm256 vm_seq *.o
