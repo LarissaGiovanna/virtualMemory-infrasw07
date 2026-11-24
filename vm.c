@@ -405,7 +405,6 @@ int main(int argc, char *argv[])
 
             int physical_address = frame * 256 + offset;
 
-            
             fprintf(correct_file, "Virtual address: %u TLB: %d Physical address: %d Value: %d\n",
                     addresses[i], tlb_index, physical_address,
                     (int)physical_memory[frame][offset]);
