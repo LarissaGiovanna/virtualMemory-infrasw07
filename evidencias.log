@@ -6329,3 +6329,36 @@ gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
 se chegou aqui, leu tudo certo
 
 Script concluído em 2026-11-23 15:49:55-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-23 22:14:28-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+[01m[Kvm.c:[m[K In function ‘[01m[Kmain[m[K’:
+[01m[Kvm.c:122:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Koffset[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  122 |             int [01;35m[Koffset[m[K = offsets[i];
+      |                 [01;35m[K^~~~~~[m[K
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Erro ao abrir o arquivo backing_store.bin
+
+Script concluído em 2026-11-23 22:14:28-03:00 [COMMAND_EXIT_CODE="1"]
+Script iniciado em 2026-11-23 22:14:51-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+[01m[Kvm.c:[m[K In function ‘[01m[Kmain[m[K’:
+[01m[Kvm.c:122:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Koffset[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  122 |             int [01;35m[Koffset[m[K = offsets[i];
+      |                 [01;35m[K^~~~~~[m[K
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Erro ao abrir o arquivo backing_store.bin
+
+Script concluído em 2026-11-23 22:14:51-03:00 [COMMAND_EXIT_CODE="1"]
+Script iniciado em 2026-11-23 22:15:05-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+[01m[Kvm.c:[m[K In function ‘[01m[Kmain[m[K’:
+[01m[Kvm.c:122:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Koffset[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  122 |             int [01;35m[Koffset[m[K = offsets[i];
+      |                 [01;35m[K^~~~~~[m[K
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Erro ao abrir o arquivo backing_store.bin
+
+Script concluído em 2026-11-23 22:15:05-03:00 [COMMAND_EXIT_CODE="1"]
