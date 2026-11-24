@@ -116,6 +116,13 @@ int main(int argc, char *argv[])
         int next_frame = 0; //próximo frame livre na memória física
         int page_faults = 0; //contador de page faults
 
+        FILE* backing_store = fopen("BACKING_STORE.bin", "rb");
+                if (backing_store == NULL)
+                {
+                    fprintf(stdout, "Erro ao abrir o arquivo BACKING_STORE.bin\n");
+                    fclose(address_file);
+                    return 1;
+            }
         for (size_t i = 0; i < address_count; i++)
         {
             int page_number = page_numbers[i];
@@ -132,33 +139,19 @@ int main(int argc, char *argv[])
                 }
 
                 //carrega a página da backing store para a memória física
-                FILE* backing_store = fopen("backing_store.bin", "rb");
-                if (backing_store == NULL)
-                {
-                    fprintf(stdout, "Erro ao abrir o arquivo backing_store.bin\n");
-                    fclose(address_file);
-                    return 1;
-                }
+                
 
                 fseek(backing_store, page_number * 256, SEEK_SET); //posiciona o ponteiro do arquivo no início da página
                 fread(physical_memory[next_frame], sizeof(int8_t), 256, backing_store); //lê os 256 bytes da página para a memória física
-                fclose(backing_store);
-
+                
                 //atualiza a tabela de páginas
                 page_table[page_number].valid = 1;
                 page_table[page_number].frame_number = next_frame;
                 next_frame++;
             }
         }
+        fclose(backing_store);
 
         fclose(address_file);
-
-        FILE* backing_store = fopen("BACKING_STORE.bin", "rb"); //abre o arquivo binário para leitura
-        if (backing_store == NULL)
-        {
-            fprintf(stdout, "Erro ao abrir o arquivo backing_store.bin\n");
-            return 1;
-        }
-        fclose(backing_store);
         return 0;
     }

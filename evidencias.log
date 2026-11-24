@@ -6362,3 +6362,25 @@ gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
 Erro ao abrir o arquivo backing_store.bin
 
 Script concluído em 2026-11-23 22:15:05-03:00 [COMMAND_EXIT_CODE="1"]
+Script iniciado em 2026-11-23 22:28:20-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+[01m[Kvm.c:[m[K In function ‘[01m[Kmain[m[K’:
+[01m[Kvm.c:129:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Koffset[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  129 |             int [01;35m[Koffset[m[K = offsets[i];
+      |                 [01;35m[K^~~~~~[m[K
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Erro ao abrir o arquivo backing_store.bin
+
+Script concluído em 2026-11-23 22:28:20-03:00 [COMMAND_EXIT_CODE="1"]
+Script iniciado em 2026-11-23 22:28:53-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+[01m[Kvm.c:[m[K In function ‘[01m[Kmain[m[K’:
+[01m[Kvm.c:129:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Koffset[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  129 |             int [01;35m[Koffset[m[K = offsets[i];
+      |                 [01;35m[K^~~~~~[m[K
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Memória física cheia. Não é possível carregar a página 190
+
+Script concluído em 2026-11-23 22:28:53-03:00 [COMMAND_EXIT_CODE="1"]
