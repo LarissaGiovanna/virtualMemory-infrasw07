@@ -6384,3 +6384,31 @@ gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
 Memória física cheia. Não é possível carregar a página 190
 
 Script concluído em 2026-11-23 22:28:53-03:00 [COMMAND_EXIT_CODE="1"]
+Script iniciado em 2026-11-23 22:39:46-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Page faults = 538
+
+Script concluído em 2026-11-23 22:39:46-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-23 22:40:52-03:00 [COMMAND="make clean && make && ./vm addresses.txt lru fifo" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Page faults = 539
+
+Script concluído em 2026-11-23 22:40:52-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-23 22:41:17-03:00 [COMMAND="make clean && make && ./vm addresses.txt fifo fifo" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Page faults = 538
+
+Script concluído em 2026-11-23 22:41:17-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-23 22:41:50-03:00 [COMMAND="make clean && make && ./vm addresses.txt lru lru" TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="157" LINES="5"]
+rm -f vm *.o
+gcc -I. -pthread -Wall -Wextra -pthread -c vm.c -o vm.o
+gcc -I. -pthread -Wall -Wextra -pthread -o vm vm.o
+Page faults = 539
+
+Script concluído em 2026-11-23 22:41:50-03:00 [COMMAND_EXIT_CODE="0"]

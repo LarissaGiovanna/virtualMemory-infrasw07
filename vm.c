@@ -115,43 +115,106 @@ int main(int argc, char *argv[])
         
         int next_frame = 0; //próximo frame livre na memória física
         int page_faults = 0; //contador de page faults
+        int use_lru = (strcmp(page_replacement_algorithm, "lru") == 0);
+
+        //frame_to_page permite descobrir qual página está em um frame na hora de substituir
+        int frame_to_page[128];
+        //fifo: ordem de carga; lru: instante do último acesso
+        unsigned long frame_order[128];
+        for (int i = 0; i < 128; i++)
+        {
+            frame_to_page[i] = -1;
+            frame_order[i] = 0;
+        }
+        unsigned long access_clock = 0;
 
         FILE* backing_store = fopen("BACKING_STORE.bin", "rb");
-                if (backing_store == NULL)
-                {
-                    fprintf(stdout, "Erro ao abrir o arquivo BACKING_STORE.bin\n");
-                    fclose(address_file);
-                    return 1;
-            }
+        if (backing_store == NULL)
+        {
+            fprintf(stdout, "Erro ao abrir o arquivo BACKING_STORE.bin\n");
+            fclose(address_file);
+            return 1;
+        }
+
         for (size_t i = 0; i < address_count; i++)
         {
             int page_number = page_numbers[i];
             int offset = offsets[i];
+            (void)offset; //o offset será usado quando a saída for implementada
 
-            if (page_table[page_number].valid == 0) //se a página não está na memória física
+            int frame;
+
+            if (page_table[page_number].valid == 0) //page fault
             {
                 page_faults++;
-                if (next_frame >= 128) //se não há mais frames livres
+
+                if (next_frame < 128) //ainda há frame livre
                 {
-                    fprintf(stdout, "Memória física cheia. Não é possível carregar a página %d\n", page_number);
+                    frame = next_frame;
+                    next_frame++;
+                }
+                else //memória cheia: escolhe a vítima
+                {
+                    frame = 0;
+                    for (int f = 1; f < 128; f++)
+                    {
+                        //FIFO usa a ordem de carga; LRU usa o último acesso
+                        if (frame_order[f] < frame_order[frame])
+                        {
+                            frame = f;
+                        }
+                    }
+
+                    int old_page = frame_to_page[frame];
+                    if (old_page >= 0)
+                    {
+                        page_table[old_page].valid = 0;
+                        page_table[old_page].page_number = -1;
+                        page_table[old_page].frame_number = -1;
+                    }
+                }
+
+                //carrega a página da backing store no frame escolhido
+                if (fseek(backing_store, (long)page_number * 256, SEEK_SET) != 0)
+                {
+                    fprintf(stdout, "Erro ao posicionar na BACKING_STORE.bin\n");
+                    fclose(backing_store);
                     fclose(address_file);
                     return 1;
                 }
 
-                //carrega a página da backing store para a memória física
-                
+                if (fread(physical_memory[frame], sizeof(int8_t), 256, backing_store) != 256)
+                {
+                    fprintf(stdout, "Erro ao ler a pagina %d da BACKING_STORE.bin\n", page_number);
+                    fclose(backing_store);
+                    fclose(address_file);
+                    return 1;
+                }
 
-                fseek(backing_store, page_number * 256, SEEK_SET); //posiciona o ponteiro do arquivo no início da página
-                fread(physical_memory[next_frame], sizeof(int8_t), 256, backing_store); //lê os 256 bytes da página para a memória física
-                
-                //atualiza a tabela de páginas
+                //atualiza a tabela de páginas e o mapa reverso
                 page_table[page_number].valid = 1;
-                page_table[page_number].frame_number = next_frame;
-                next_frame++;
+                page_table[page_number].page_number = page_number;
+                page_table[page_number].frame_number = frame;
+                frame_to_page[frame] = page_number;
+                frame_order[frame] = ++access_clock;
+            }
+            else //página já está na memória
+            {
+                frame = page_table[page_number].frame_number;
+
+                //no LRU, todo acesso atualiza a recência; no FIFO, não
+                if (use_lru)
+                {
+                    frame_order[frame] = ++access_clock;
+                }
             }
         }
-        fclose(backing_store);
 
+        fclose(backing_store);
         fclose(address_file);
+
+        //diagnóstico temporário para validar FIFO x LRU; será removido na saída oficial
+        fprintf(stderr, "Page faults = %d\n", page_faults);
+
         return 0;
     }
