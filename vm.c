@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <errno.h>
+#include <pthread.h>
 
 typedef struct{
     int page_number;
@@ -19,6 +20,20 @@ typedef struct{
 }TLB;
 
 int8_t physical_memory[128][256]; //128 frames de 256 bytes cada
+
+typedef struct{
+    const TLB *entry;
+    int page_number;
+    int hit;
+} TlbSearchArg;
+
+//cada thread verifica apenas uma entrada da TLB
+static void *tlb_search_entry(void *arg)
+{
+    TlbSearchArg *search = (TlbSearchArg *)arg;
+    search->hit = (search->entry->valid && search->entry->page_number == search->page_number);
+    return NULL;
+}
 
 int main(int argc, char *argv[])
 {
@@ -115,7 +130,9 @@ int main(int argc, char *argv[])
         
         int next_frame = 0; //próximo frame livre na memória física
         int page_faults = 0; //contador de page faults
+        int tlb_hits = 0; //contador de acertos na TLB
         int use_lru = (strcmp(page_replacement_algorithm, "lru") == 0);
+        int tlb_use_lru = (strcmp(tlb_replacement_algorithm, "lru") == 0);
 
         //frame_to_page permite descobrir qual página está em um frame na hora de substituir
         int frame_to_page[128];
@@ -127,6 +144,19 @@ int main(int argc, char *argv[])
             frame_order[i] = 0;
         }
         unsigned long access_clock = 0;
+
+        //TLB com 16 entradas
+        TLB tlb[16];
+        unsigned long tlb_order[16];
+        for (int i = 0; i < 16; i++)
+        {
+            tlb[i].page_number = -1;
+            tlb[i].frame_number = -1;
+            tlb[i].valid = 0;
+            tlb[i].last_access = 0;
+            tlb_order[i] = 0;
+        }
+        unsigned long tlb_clock = 0;
 
         FILE* backing_store = fopen("BACKING_STORE.bin", "rb");
         if (backing_store == NULL)
@@ -140,81 +170,185 @@ int main(int argc, char *argv[])
         {
             int page_number = page_numbers[i];
             int offset = offsets[i];
-            (void)offset; //o offset será usado quando a saída for implementada
 
             int frame;
+            int tlb_index = -1;
 
-            if (page_table[page_number].valid == 0) //page fault
+            //procura a página na TLB com uma thread por entrada
+            pthread_t search_threads[16];
+            TlbSearchArg search_args[16];
+            for (int t = 0; t < 16; t++)
             {
-                page_faults++;
+                search_args[t].entry = &tlb[t];
+                search_args[t].page_number = page_number;
+                search_args[t].hit = 0;
 
-                if (next_frame < 128) //ainda há frame livre
+                if (pthread_create(&search_threads[t], NULL, tlb_search_entry, &search_args[t]) != 0)
                 {
-                    frame = next_frame;
-                    next_frame++;
-                }
-                else //memória cheia: escolhe a vítima
-                {
-                    frame = 0;
-                    for (int f = 1; f < 128; f++)
-                    {
-                        //FIFO usa a ordem de carga; LRU usa o último acesso
-                        if (frame_order[f] < frame_order[frame])
-                        {
-                            frame = f;
-                        }
-                    }
-
-                    int old_page = frame_to_page[frame];
-                    if (old_page >= 0)
-                    {
-                        page_table[old_page].valid = 0;
-                        page_table[old_page].page_number = -1;
-                        page_table[old_page].frame_number = -1;
-                    }
-                }
-
-                //carrega a página da backing store no frame escolhido
-                if (fseek(backing_store, (long)page_number * 256, SEEK_SET) != 0)
-                {
-                    fprintf(stdout, "Erro ao posicionar na BACKING_STORE.bin\n");
+                    fprintf(stderr, "Erro ao criar thread da TLB\n");
                     fclose(backing_store);
                     fclose(address_file);
                     return 1;
                 }
-
-                if (fread(physical_memory[frame], sizeof(int8_t), 256, backing_store) != 256)
-                {
-                    fprintf(stdout, "Erro ao ler a pagina %d da BACKING_STORE.bin\n", page_number);
-                    fclose(backing_store);
-                    fclose(address_file);
-                    return 1;
-                }
-
-                //atualiza a tabela de páginas e o mapa reverso
-                page_table[page_number].valid = 1;
-                page_table[page_number].page_number = page_number;
-                page_table[page_number].frame_number = frame;
-                frame_to_page[frame] = page_number;
-                frame_order[frame] = ++access_clock;
             }
-            else //página já está na memória
-            {
-                frame = page_table[page_number].frame_number;
 
-                //no LRU, todo acesso atualiza a recência; no FIFO, não
+            for (int t = 0; t < 16; t++)
+            {
+                pthread_join(search_threads[t], NULL);
+            }
+
+            //a primeira entrada que deu hit é o índice mostrado na saída
+            for (int t = 0; t < 16; t++)
+            {
+                if (search_args[t].hit)
+                {
+                    tlb_index = t;
+                    break;
+                }
+            }
+
+            if (tlb_index >= 0) //TLB hit
+            {
+                tlb_hits++;
+                frame = tlb[tlb_index].frame_number;
+
+                //no LRU da TLB, o acerto atualiza a recência
+                if (tlb_use_lru)
+                {
+                    tlb_order[tlb_index] = ++tlb_clock;
+                }
+
+                //um acerto na TLB também é um acesso à página na memória
                 if (use_lru)
                 {
                     frame_order[frame] = ++access_clock;
                 }
             }
+            else //TLB miss: consulta a page table
+            {
+                if (page_table[page_number].valid == 0) //page fault
+                {
+                    page_faults++;
+
+                    if (next_frame < 128) //ainda há frame livre
+                    {
+                        frame = next_frame;
+                        next_frame++;
+                    }
+                    else //memória cheia: escolhe a vítima
+                    {
+                        frame = 0;
+                        for (int f = 1; f < 128; f++)
+                        {
+                            //FIFO usa a ordem de carga; LRU usa o último acesso
+                            if (frame_order[f] < frame_order[frame])
+                            {
+                                frame = f;
+                            }
+                        }
+
+                        int old_page = frame_to_page[frame];
+                        if (old_page >= 0)
+                        {
+                            page_table[old_page].valid = 0;
+                            page_table[old_page].page_number = -1;
+                            page_table[old_page].frame_number = -1;
+
+                            //a página saiu da memória: invalida a entrada dela na TLB
+                            for (int t = 0; t < 16; t++)
+                            {
+                                if (tlb[t].valid && tlb[t].page_number == old_page)
+                                {
+                                    tlb[t].valid = 0;
+                                    tlb[t].page_number = -1;
+                                    tlb[t].frame_number = -1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    //carrega a página da backing store no frame escolhido
+                    if (fseek(backing_store, (long)page_number * 256, SEEK_SET) != 0)
+                    {
+                        fprintf(stdout, "Erro ao posicionar na BACKING_STORE.bin\n");
+                        fclose(backing_store);
+                        fclose(address_file);
+                        return 1;
+                    }
+
+                    if (fread(physical_memory[frame], sizeof(int8_t), 256, backing_store) != 256)
+                    {
+                        fprintf(stdout, "Erro ao ler a pagina %d da BACKING_STORE.bin\n", page_number);
+                        fclose(backing_store);
+                        fclose(address_file);
+                        return 1;
+                    }
+
+                    //atualiza a tabela de páginas e o mapa reverso
+                    page_table[page_number].valid = 1;
+                    page_table[page_number].page_number = page_number;
+                    page_table[page_number].frame_number = frame;
+                    frame_to_page[frame] = page_number;
+                    frame_order[frame] = ++access_clock;
+                }
+                else //página já está na memória
+                {
+                    frame = page_table[page_number].frame_number;
+
+                    //no LRU, todo acesso atualiza a recência; no FIFO, não
+                    if (use_lru)
+                    {
+                        frame_order[frame] = ++access_clock;
+                    }
+                }
+
+                //insere a página na TLB
+                tlb_index = -1;
+                for (int t = 0; t < 16; t++)
+                {
+                    if (!tlb[t].valid)
+                    {
+                        tlb_index = t;
+                        break;
+                    }
+                }
+
+                if (tlb_index < 0) //TLB cheia: escolhe a vítima
+                {
+                    tlb_index = 0;
+                    for (int t = 1; t < 16; t++)
+                    {
+                        //FIFO usa a ordem de entrada; LRU usa o último acesso
+                        if (tlb_order[t] < tlb_order[tlb_index])
+                        {
+                            tlb_index = t;
+                        }
+                    }
+                }
+
+                tlb[tlb_index].valid = 1;
+                tlb[tlb_index].page_number = page_number;
+                tlb[tlb_index].frame_number = frame;
+                tlb[tlb_index].last_access = ++tlb_clock;
+                tlb_order[tlb_index] = tlb_clock;
+            }
+
+            int physical_address = frame * 256 + offset;
+
+            fprintf(stdout, "Virtual address: %u TLB: %d Physical address: %d Value: %d\n",
+                    addresses[i], tlb_index, physical_address,
+                    (int)physical_memory[frame][offset]);
         }
 
         fclose(backing_store);
         fclose(address_file);
 
-        //diagnóstico temporário para validar FIFO x LRU; será removido na saída oficial
-        fprintf(stderr, "Page faults = %d\n", page_faults);
+        fprintf(stdout, "Number of Translated Addresses = %zu\n", address_count);
+        fprintf(stdout, "Page Faults = %d\n", page_faults);
+        fprintf(stdout, "Page Fault Rate = %.3f\n", address_count ? (double)page_faults / (double)address_count : 0.0);
+        fprintf(stdout, "TLB Hits = %d\n", tlb_hits);
+        fprintf(stdout, "TLB Hit Rate = %.3f\n", address_count ? (double)tlb_hits / (double)address_count : 0.0);
 
         return 0;
     }
