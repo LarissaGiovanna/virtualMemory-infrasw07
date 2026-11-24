@@ -8445,3 +8445,163 @@ TLB Hits = 54
 TLB Hit Rate = 0.054
 
 Script concluído em 2026-11-24 10:43:08-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:51:40-03:00 [COMMAND="echo 'Iniciando bateria de testes de robustez e casos-limite'" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Iniciando bateria de testes de robustez e casos-limite
+
+Script concluído em 2026-11-24 14:51:40-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:51:49-03:00 [COMMAND="make clean && make" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+rm -f vm vm_notlb vm256 vm_seq *.o
+gcc -I. -pthread -Wall -Wextra -o vm vm.c
+
+Script concluído em 2026-11-24 14:51:49-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:51:49-03:00 [COMMAND="./vm addresses.txt lru fifo > /tmp/saida.txt && diff -u correct.txt /tmp/saida.txt && echo 'DIFF ZERO OK'" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+DIFF ZERO OK
+
+Script concluído em 2026-11-24 14:51:50-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:51:50-03:00 [COMMAND="for i in $(seq 1 10); do ./vm addresses.txt lru fifo > /tmp/saida_$i.txt || exit 1; diff -q correct.txt /tmp/saida_$i.txt || exit 1; done && echo '10 EXECUCOES CONSECUTIVAS SEM DIFERENCA'" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+10 EXECUCOES CONSECUTIVAS SEM DIFERENCA
+
+Script concluído em 2026-11-24 14:51:54-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:51:58-03:00 [COMMAND="VM_TLB=0 ./vm addresses.txt lru fifo | tail -n 5" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Number of Translated Addresses = 1000
+Page Faults = 539
+Page Fault Rate = 0.539
+TLB Hits = 0
+TLB Hit Rate = 0.000
+
+Script concluído em 2026-11-24 14:51:58-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:51:58-03:00 [COMMAND="VM_TLB=0 VM_FRAMES=256 ./vm addresses.txt lru fifo | tail -n 5" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Number of Translated Addresses = 1000
+Page Faults = 244
+Page Fault Rate = 0.244
+TLB Hits = 0
+TLB Hit Rate = 0.000
+
+Script concluído em 2026-11-24 14:51:58-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:51:58-03:00 [COMMAND="VM_THREADS=0 ./vm addresses.txt lru fifo | tail -n 5" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Number of Translated Addresses = 1000
+Page Faults = 539
+Page Fault Rate = 0.539
+TLB Hits = 54
+TLB Hit Rate = 0.054
+
+Script concluído em 2026-11-24 14:51:58-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/valido_limites.txt lru fifo" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo:     EOF
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="1"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_negativo.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: -1
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_maior_65535.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: 65536
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_overflow.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Erro ao abrir o arquivo /tmp/testes_vm/invalido_overflow.txt
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_letras.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: abc
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_espaco_meio.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: 12 34
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_sufixo.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Erro ao abrir o arquivo /tmp/testes_vm/invalido_sufixo.txt
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_linha_vazia.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: 
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:04-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_mais_de_1000.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Muitos enderecos.
+
+Script concluído em 2026-11-24 14:52:04-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:26-03:00 [COMMAND="./vm /tmp/testes_vm/valido_limites.txt lru fifo" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Virtual address: 0 TLB: 0 Physical address: 0 Value: 0
+Virtual address: 1 TLB: 0 Physical address: 1 Value: 0
+Virtual address: 255 TLB: 0 Physical address: 255 Value: 63
+Virtual address: 256 TLB: 1 Physical address: 256 Value: 0
+Virtual address: 128 TLB: 0 Physical address: 128 Value: 0
+Virtual address: 65534 TLB: 2 Physical address: 766 Value: 63
+Virtual address: 65535 TLB: 2 Physical address: 767 Value: -1
+Number of Translated Addresses = 7
+Page Faults = 3
+Page Fault Rate = 0.429
+TLB Hits = 4
+TLB Hit Rate = 0.571
+
+Script concluído em 2026-11-24 14:52:26-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:26-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_negativo.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: -1
+
+Script concluído em 2026-11-24 14:52:26-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:26-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_maior_65535.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: 65536
+
+Script concluído em 2026-11-24 14:52:27-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:27-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_overflow_long.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: 999999999999999999999999999999
+
+Script concluído em 2026-11-24 14:52:27-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:27-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_letras.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: abc
+
+Script concluído em 2026-11-24 14:52:27-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:27-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_espaco_meio.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: 12 34
+
+Script concluído em 2026-11-24 14:52:27-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:27-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_letra_sufixo.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: 123a
+
+Script concluído em 2026-11-24 14:52:27-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:27-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_linha_vazia.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Endereço inválido no arquivo: 
+
+Script concluído em 2026-11-24 14:52:27-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:27-03:00 [COMMAND="./vm /tmp/testes_vm/invalido_mais_de_1000.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Muitos enderecos.
+
+Script concluído em 2026-11-24 14:52:27-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:33-03:00 [COMMAND="./vm || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Uso incorreto. Uso: ./vm <nome_arquivo> <algoritmo_substituicao_pagina> <algoritmo_substituicao_tlb>
+
+Script concluído em 2026-11-24 14:52:33-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:33-03:00 [COMMAND="./vm addresses.txt lru || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Uso incorreto. Uso: ./vm <nome_arquivo> <algoritmo_substituicao_pagina> <algoritmo_substituicao_tlb>
+
+Script concluído em 2026-11-24 14:52:33-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:33-03:00 [COMMAND="./vm addresses.txt lru fifo extra || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Uso incorreto. Uso: ./vm <nome_arquivo> <algoritmo_substituicao_pagina> <algoritmo_substituicao_tlb>
+
+Script concluído em 2026-11-24 14:52:33-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:33-03:00 [COMMAND="./vm addresses.txt opt fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Algoritmo de substituição de página ou TLB inválido. Use 'lru' ou 'fifo'.
+
+Script concluído em 2026-11-24 14:52:34-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:34-03:00 [COMMAND="./vm addresses.txt lru random || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Algoritmo de substituição de página ou TLB inválido. Use 'lru' ou 'fifo'.
+
+Script concluído em 2026-11-24 14:52:34-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:34-03:00 [COMMAND="./vm nao_existe.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+Erro ao abrir o arquivo nao_existe.txt
+
+Script concluído em 2026-11-24 14:52:34-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:34-03:00 [COMMAND="VM_FRAMES=0 ./vm addresses.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+VM_FRAMES inválido: use um valor entre 1 e 256
+
+Script concluído em 2026-11-24 14:52:34-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:34-03:00 [COMMAND="VM_FRAMES=300 ./vm addresses.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+VM_FRAMES inválido: use um valor entre 1 e 256
+
+Script concluído em 2026-11-24 14:52:34-03:00 [COMMAND_EXIT_CODE="0"]
+Script iniciado em 2026-11-24 14:52:34-03:00 [COMMAND="VM_FRAMES=abc ./vm addresses.txt lru fifo || true" TERM="dumb" TTY="/dev/pts/3" COLUMNS="80" LINES="24"]
+VM_FRAMES inválido: use um valor entre 1 e 256
+
+Script concluído em 2026-11-24 14:52:34-03:00 [COMMAND_EXIT_CODE="0"]
